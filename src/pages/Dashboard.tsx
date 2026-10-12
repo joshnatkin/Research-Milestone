@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowUpRight, BedDouble, Building2, CalendarDays, CheckCheck, DoorOpen, GraduationCap, Percent, Wrench } from 'lucide-react'
+import { ArrowUpRight, BedDouble, House, CalendarDays, CheckCheck, DoorOpen, GraduationCap, Percent, Wrench } from 'lucide-react'
 import { Link } from 'react-router'
 import { MetricCard } from '../components/MetricCard'
 import { ProgressBar } from '../components/ProgressBar'
@@ -20,7 +20,7 @@ export function Dashboard({ data, warning }: { data: PortfolioData; warning?: st
         <div>
           <p className="eyebrow mb-2">YOUR PORTFOLIO, AT A GLANCE</p>
           <h1 className="page-title">Dashboard</h1>
-          <p className="mt-2 text-sm text-slate-500">A little clarity for the next academic chapter.</p>
+          <p className="mt-2 text-sm text-slate-500">Whole-house student rentals · Columbia, SC demo portfolio</p>
         </div>
         <label className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm">
           <CalendarDays size={17} className="text-teal-700" aria-hidden="true" />
@@ -34,7 +34,7 @@ export function Dashboard({ data, warning }: { data: PortfolioData; warning?: st
       {warning && <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{warning}</p>}
 
       <section aria-label="Portfolio metrics" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 xl:gap-4">
-        <MetricCard label="Total properties" value={metrics.totalProperties} detail="In this academic year" icon={Building2} />
+        <MetricCard label="Total properties" value={metrics.totalProperties} detail="In this academic year" icon={House} />
         <MetricCard label="Total bedrooms" value={metrics.totalBedrooms} detail="Across your portfolio" icon={BedDouble} />
         <MetricCard label="Leased bedrooms" value={metrics.leasedBedrooms} detail="For the selected year" icon={CheckCheck} />
         <MetricCard label="Available bedrooms" value={metrics.availableBedrooms} detail="Ready for their next chapter" icon={DoorOpen} />
@@ -83,7 +83,7 @@ export function Dashboard({ data, warning }: { data: PortfolioData; warning?: st
                 const occupancy = occupancyPercent(property.leasedBedrooms, property.totalBedrooms)
                 return <tr key={property.id} className="hover:bg-slate-50/70">
                   <th scope="row" className="px-6 py-4 font-normal"><div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-slate-100 p-2.5 text-slate-500"><Building2 size={19} aria-hidden="true" /></div>
+                    <div className="rounded-lg bg-slate-100 p-2.5 text-slate-500"><House size={19} aria-hidden="true" /></div>
                     <div><p className="font-semibold">{property.name}</p><p className="mt-1 text-xs text-slate-500">{property.address}</p></div>
                   </div></th>
                   <td className="px-4 py-4 tabular-nums">{property.totalBedrooms}</td>
@@ -96,9 +96,9 @@ export function Dashboard({ data, warning }: { data: PortfolioData; warning?: st
             </tbody>
           </table>
         </div>
-        <div className="border-t border-slate-100 px-6 py-3 text-xs text-slate-500">Occupancy reflects bedrooms leased for the selected academic year, not current residents.</div>
+        <div className="border-t border-slate-100 px-6 py-3 text-xs text-slate-500">Each house is leased in full or available. Portfolio occupancy is weighted by bedrooms for the selected academic year.</div>
       </section>
-      <footer className="flex flex-wrap justify-between gap-2 text-xs text-slate-500"><p>Fictional properties. Real learning.</p><p>Estate research milestone · Stage 1</p></footer>
+      <footer className="flex flex-wrap justify-between gap-2 text-xs text-slate-500"><p>Fictional properties. Real learning.</p><p>Estate research milestone · Stage 2</p></footer>
     </div>
   )
 }

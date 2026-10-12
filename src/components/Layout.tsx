@@ -1,28 +1,28 @@
 import { useEffect } from 'react'
-import { Building2, GraduationCap, LayoutDashboard, Wrench } from 'lucide-react'
+import { House, GraduationCap, LayoutDashboard, Wrench } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 
 const navigation = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/properties', label: 'Properties', icon: Building2 },
+  { to: '/properties', label: 'Properties', icon: House },
   { to: '/maintenance', label: 'Maintenance', icon: Wrench },
 ]
 
 export function Layout() {
   const { pathname } = useLocation()
-  const title = navigation.find((item) => item.to === pathname)?.label ?? 'Page not found'
+  const title = pathname.startsWith('/properties/') ? 'Properties' : navigation.find((item) => item.to === pathname)?.label ?? 'Page not found'
   useEffect(() => { document.title = `${title} | Estate` }, [title])
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:bg-white focus:p-4">Skip to content</a>
       <aside className="flex flex-col bg-[#142c35] px-5 py-6 text-white lg:sticky lg:top-0 lg:h-screen">
         <NavLink to="/" className="flex items-center gap-3 px-3 text-3xl font-semibold tracking-tight" aria-label="Estate home">
-          <Building2 className="text-teal-300" size={30} aria-hidden="true" />estate<span className="-ml-3 text-teal-300">.</span>
+          <House className="text-teal-300" size={30} aria-hidden="true" />estate<span className="-ml-3 text-teal-300">.</span>
         </NavLink>
         <p className="mt-10 hidden px-3 text-[10px] font-semibold tracking-[0.18em] text-slate-400 lg:block">WORKSPACE</p>
         <nav aria-label="Main navigation" className="mt-5 flex flex-wrap gap-2 lg:flex-col">
           {navigation.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} end className={({ isActive }) =>
+            <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors ${isActive ? 'bg-white/10 text-teal-200' : 'text-slate-300 hover:bg-white/5 hover:text-white'}`}>
               <Icon size={18} aria-hidden="true" />{label}
             </NavLink>

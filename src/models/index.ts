@@ -5,7 +5,7 @@ export interface Property {
   totalBedrooms: number
   leasedBedrooms: number
   monthlyRentPerBedroom: number
-  leasingStatus: 'Leasing' | 'Fully leased'
+  leasingStatus: 'Available' | 'Fully leased'
   academicYear: string
 }
 

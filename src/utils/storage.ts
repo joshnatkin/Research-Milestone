@@ -1,7 +1,17 @@
 import { mockData } from '../data/mockData'
 import type { PortfolioData } from '../models'
 
-export const STORAGE_KEY = 'estate.portfolio.v1'
+// Whole-house schema: keep the old v1 apartment demo untouched.
+export const STORAGE_KEY = 'estate.portfolio.v2'
+
+export function savePortfolio(data: PortfolioData): void {
+  if (!isPortfolioData(data)) throw new Error('The portfolio is invalid. Changes were not saved.')
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  } catch {
+    throw new Error('Changes could not be saved to browser storage. Your portfolio has not changed. Please enable storage or free up space, then try again.')
+  }
+}
 
 // JSON from browser storage needs runtime checks; TypeScript only checks our code.
 function isPortfolioData(value: unknown): value is PortfolioData {
@@ -10,10 +20,10 @@ function isPortfolioData(value: unknown): value is PortfolioData {
   if (!Array.isArray(data.properties) || !Array.isArray(data.maintenanceRequests)) return false
   const validProperties = data.properties.every((p) => p &&
     typeof p.id === 'string' && typeof p.name === 'string' && typeof p.address === 'string' &&
-    typeof p.academicYear === 'string' && Number.isInteger(p.totalBedrooms) && p.totalBedrooms > 0 &&
-    Number.isInteger(p.leasedBedrooms) && p.leasedBedrooms >= 0 && p.leasedBedrooms <= p.totalBedrooms &&
+    typeof p.academicYear === 'string' && Number.isInteger(p.totalBedrooms) && p.totalBedrooms >= 3 && p.totalBedrooms <= 6 &&
+    Number.isInteger(p.leasedBedrooms) && (p.leasedBedrooms === 0 || p.leasedBedrooms === p.totalBedrooms) &&
     Number.isFinite(p.monthlyRentPerBedroom) && p.monthlyRentPerBedroom >= 0 &&
-    p.leasingStatus === (p.leasedBedrooms === p.totalBedrooms ? 'Fully leased' : 'Leasing'))
+    p.leasingStatus === (p.leasedBedrooms === p.totalBedrooms ? 'Fully leased' : 'Available'))
   if (!validProperties) return false
   const ids = new Set(data.properties.map((p) => p.id))
   return ids.size === data.properties.length &&
