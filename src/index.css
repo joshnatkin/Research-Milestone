@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body { @apply m-0 bg-[#f5f7f8] text-slate-800 antialiased; }
+  a, button, select { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600; }
+}
+
+@layer components {
+  .panel { @apply rounded-xl border border-slate-200 bg-white shadow-xs; }
+  .page-title { @apply text-3xl font-semibold tracking-tight; }
+  .eyebrow { @apply text-[11px] font-semibold tracking-[0.16em] text-teal-700; }
+}
