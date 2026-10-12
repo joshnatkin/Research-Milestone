@@ -98,7 +98,7 @@ export function Dashboard({ data, warning }: { data: PortfolioData; warning?: st
         </div>
         <div className="border-t border-slate-100 px-6 py-3 text-xs text-slate-500">Each house is leased in full or available. Portfolio occupancy is weighted by bedrooms for the selected academic year.</div>
       </section>
-      <footer className="flex flex-wrap justify-between gap-2 text-xs text-slate-500"><p>Fictional properties. Real learning.</p><p>Estate research milestone · Stage 2</p></footer>
+      <footer className="flex flex-wrap justify-between gap-2 text-xs text-slate-500"><p>Fictional properties. Real learning.</p><p>Estate research milestone · Stage 3</p></footer>
     </div>
   )
 }

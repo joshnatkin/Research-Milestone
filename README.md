@@ -1,6 +1,6 @@
 # Estate — Research Milestone
 
-This is my individual research prototype for CSCE 490. Estate is a proposed web-based ERP property management platform for landlords and property managers, especially those managing student housing. This repository is at Stage 2 of a three-stage prototype to learn the tools before building the larger team application.
+This is my individual research prototype for CSCE 490. Estate is a proposed web-based ERP property management platform for landlords and property managers, especially those managing student housing. This repository is at Stage 3, completing the three-stage prototype to learn the tools before building the larger team application.
 
 ## Running locally
 
@@ -45,7 +45,7 @@ Setup follows the [Vite React template](https://vite.dev/guide/), [Tailwind Vite
 
 - Responsive sidebar/navigation, page header, and dashboard cards.
 - Dashboard at `/`, with six calculated metrics, academic-year selection, leasing progress, and a property occupancy table.
-- Properties at `/properties`, details at `/properties/:propertyId`, a Maintenance placeholder at `/maintenance`, and a page-not-found fallback.
+- Properties at `/properties`, details at `/properties/:propertyId`, Maintenance management at `/maintenance`, and a page-not-found fallback.
 - Six fictional properties and six maintenance requests, separated from the components.
 - Browser persistence initialized from sample data on the first visit.
 
@@ -65,16 +65,28 @@ Choose **View details** to see the property's information and estimated monthly 
 
 If browser storage fails, the form shows an error and stays open with the draft intact. The previous portfolio remains unchanged, and success is only reported after storage accepts the write. Reloading uses the same `estate.portfolio.v2` key and preserves saved edits. This is a single-browser prototype; concurrent edits in multiple tabs are not synchronized.
 
+## Stage 3: Maintenance
+
+The Maintenance page has calculated totals for all requests, Open, In progress, and Resolved. These cards always cover the full portfolio, while status, priority, and house filters narrow the table together. Clear filters restores the full list, and an empty state explains when nothing matches.
+
+The property manager chooses **Create request**, selects a house, writes a description, and assigns Low, Medium, or High priority. The app rejects missing houses, blank or whitespace-only descriptions, and invalid priorities. It trims the description, generates a unique ID with `crypto.randomUUID()`, and starts the request as Open. A successful save closes the form, clears filters so the new request is visible, and displays confirmation. Cancel discards the draft.
+
+Each row has a status dropdown for Open → In progress → Resolved, with reopening allowed. Status changes save immediately. A changed row may disappear if it no longer matches the current filters. These updates use the same shared portfolio and `savePortfolio()` as leasing edits: construct a new value, validate and save it, then update React state. Failed saves show an error without changing the portfolio. There is no separate maintenance storage key, so refresh restores both repairs and leasing changes together.
+
+The existing dashboard calculation counts Open and In progress requests for houses in the selected academic year. Creating or reopening adds one unresolved request; moving Open to In progress leaves the count unchanged; resolving subtracts one. The Maintenance summary instead separates the three statuses across all houses.
+
+This final stage demonstrates reusable React components, typed data, routing, shared state, runtime validation, and browser persistence in a small ERP workflow. It is not a production ERP: there is no server, access control, audit history, backup, or reliable multi-user synchronization. Use fictional data only. Localhost supports the UUID API; a hosted version would need HTTPS.
+
 ## Project structure
 
 ```text
 src/
   components/     Layout, MetricCard, ProgressBar
-  pages/          Dashboard, Properties, PropertyDetails, Maintenance placeholder
+  pages/          Dashboard, Properties, PropertyDetails, Maintenance
   models/         Property, MaintenanceRequest, PortfolioData interfaces
   data/           Fictional sample dataset and academic year
-  utils/          Storage loading/saving, metrics, property filtering/updates
-  App.tsx         Routes, shared portfolio state, and save callback
+  utils/          Storage loading/saving, metrics, property and maintenance filtering/updates
+  App.tsx         Routes, shared portfolio state, and save callbacks
   main.tsx        React entry point and BrowserRouter
   index.css       Tailwind import and shared styles
 tests/
@@ -83,12 +95,24 @@ tests/
 
 The app loads its portfolio once and shares it through props. Calculations and property updates are plain functions so they can be tested without a browser. The layout uses React Router's `Outlet` to keep navigation consistent across pages.
 
-Data is stored under `estate.portfolio.v2`. This whole-house dataset starts fresh once; the earlier apartment-style demo remains untouched under `estate.portfolio.v1` and is not migrated because partial leases cannot be mapped reliably to whole-house leases. Subsequent visits load the saved dataset, so editing the mock file alone will not replace existing browser data. To reset the demo, remove that key in your browser's developer tools and reload. Saved JSON is validated at runtime. If it is invalid or storage is blocked, the app shows a notice and uses sample data for that visit without overwriting the invalid data. Persistence is specific to the browser and origin (including port), and clearing site data removes it. A valid explicit save from the leasing form writes the updated portfolio, including when the app initially loaded fallback sample data.
+Data is stored under `estate.portfolio.v2`. This whole-house dataset starts fresh once; the earlier apartment-style demo remains untouched under `estate.portfolio.v1` and is not migrated because partial leases cannot be mapped reliably to whole-house leases. Subsequent visits load the saved dataset, so editing the mock file alone will not replace existing browser data. To reset the demo, remove that key in your browser's developer tools and reload. Saved JSON is validated at runtime. If it is invalid or storage is blocked, the app shows a notice and uses sample data for that visit without overwriting the invalid data. Persistence is specific to the browser and origin (including port), and clearing site data removes it. A valid explicit save from a leasing or maintenance action writes the updated portfolio, including when the app initially loaded fallback sample data.
 
 ## Verification and limits
 
-The Stage 2 production build and strict TypeScript checks pass. The development server and HTTP responses were checked in Stage 1. `npm run verify` checks the expected totals, changed data, an empty portfolio, maintenance scoping, initial storage, saved reloads, malformed/blocked storage, all three page routes, and the fallback route. Stage 2 adds checks for immutable updates, fully leased and reopened status transitions, invalid and partial-house counts, preservation of old demo storage, combined filters, save/reload persistence, blocked/quota-failed writes, and updated dashboard/detail values including estimated revenue. Route checks render React to HTML in Node; they do not automate browser clicks. The interface has not been visually tested in a browser, and actual browser persistence, keyboard navigation, and mobile appearance still need a manual check.
+The Stage 3 production build and strict TypeScript checks pass. The development server and HTTP responses were checked in Stage 1. `npm run verify` checks the expected totals, changed data, an empty portfolio, maintenance scoping, initial storage, saved reloads, malformed/blocked storage, all three page routes, and the fallback route. Stage 2 adds checks for immutable updates, fully leased and reopened status transitions, invalid and partial-house counts, preservation of old demo storage, combined filters, save/reload persistence, blocked/quota-failed writes, and updated dashboard/detail values including estimated revenue. Stage 3 adds checks for maintenance creation, unique IDs, description validation, combined filters, status changes/reopening, summary and dashboard counts, save/reload and save failures, and preservation of property edits. Route checks render React to HTML in Node; they do not automate browser clicks. The interface has not been visually tested in a browser, and actual browser persistence, keyboard navigation, and mobile appearance still need a manual check.
 
-Manual check: open Properties, combine search and status filters, and view Maple House. Change it from Available to Fully leased and save. Details should show 4 leased bedrooms, 100% occupancy, and $3,300 estimated monthly revenue; the dashboard should show 16 leased bedrooms, 9 available, and 64.0% occupancy. Refresh to confirm persistence. Set it back to Available, or try Cancel to discard the draft. Visit Maintenance to confirm its placeholder still works. Resize the window to check navigation and horizontally scrollable tables.
+Manual check: open Properties, combine search and status filters, and view Maple House. Change it from Available to Fully leased and save. Details should show 4 leased bedrooms, 100% occupancy, and $3,300 estimated monthly revenue; the dashboard should show 16 leased bedrooms, 9 available, and 64.0% occupancy. Refresh to confirm persistence. Set it back to Available, or try Cancel to discard the draft. Use the maintenance workflow below to check repairs. Resize the window to check navigation and horizontally scrollable tables.
 
-Only whole-house leasing-status editing is implemented; general property editing, authentication, tenant login, maintenance forms, payments, uploads, integrations, backend, and database remain out of scope. If hosted later, the static host must return `index.html` for application routes so direct visits work with `BrowserRouter`. No deployment, remote repository, or Git commit is created as part of this milestone.
+Whole-house leasing and maintenance management are implemented. General property editing, property creation/deletion, authentication, tenant login, payments, uploads, integrations, backend, and database remain out of scope. If hosted later, the static host must return `index.html` for application routes so direct visits work with `BrowserRouter`. No deployment, remote repository, or Git commit is created as part of this milestone.
+
+
+## Quick maintenance demo
+
+1. Run `npm run dev` and open Maintenance. Fresh sample data has 6 requests: 2 Open, 2 In progress, and 2 Resolved. The dashboard starts with 4 unresolved requests.
+2. Create a High-priority request for Maple House, such as “Repair the porch light.” It appears as Open; the total becomes 7 and the dashboard unresolved count becomes 5.
+3. Filter by High, Open, and Maple House. Clear filters to show everything again.
+4. Change the new request to In progress, then Resolved. The dashboard count stays at 5, then drops to 4. Reopen it to return to 5.
+5. Refresh and verify the request remains. Check a property's leasing status to confirm maintenance changes preserved it.
+6. Try submitting a blank description or no house to see validation. Try Cancel to discard a new draft.
+
+Counts above assume the initial demo data; an existing saved portfolio may have different totals.

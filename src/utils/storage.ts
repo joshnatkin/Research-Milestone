@@ -1,5 +1,6 @@
 import { mockData } from '../data/mockData'
 import type { PortfolioData } from '../models'
+import { priorities, statuses } from './maintenance'
 
 // Whole-house schema: keep the old v1 apartment demo untouched.
 export const STORAGE_KEY = 'estate.portfolio.v2'
@@ -28,9 +29,9 @@ function isPortfolioData(value: unknown): value is PortfolioData {
   const ids = new Set(data.properties.map((p) => p.id))
   return ids.size === data.properties.length &&
     new Set(data.maintenanceRequests.map((r) => r?.id)).size === data.maintenanceRequests.length &&
-    data.maintenanceRequests.every((r) => r && typeof r.id === 'string' && ids.has(r.propertyId) &&
-      typeof r.description === 'string' && ['Low', 'Medium', 'High'].includes(r.priority) &&
-      ['Open', 'In progress', 'Resolved'].includes(r.status))
+    data.maintenanceRequests.every((r) => r && typeof r.id === 'string' && r.id.trim().length > 0 && ids.has(r.propertyId) &&
+      typeof r.description === 'string' && r.description.trim().length > 0 && priorities.includes(r.priority) &&
+      statuses.includes(r.status))
 }
 
 export function loadPortfolio(): { data: PortfolioData; warning?: string } {

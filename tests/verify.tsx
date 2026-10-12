@@ -6,6 +6,7 @@ import { mockData } from '../src/data/mockData'
 import { calculateMetrics, occupancyPercent } from '../src/utils/metrics'
 import { loadPortfolio, savePortfolio, STORAGE_KEY } from '../src/utils/storage'
 import { filterProperties, parseLeasedBedrooms, updatePropertyLeasing } from '../src/utils/properties'
+import { createMaintenanceRequest, updateMaintenanceStatus, filterMaintenance, maintenanceSummary } from '../src/utils/maintenance'
 
 // A small browser-storage substitute keeps these checks dependency-free.
 const saved = new Map<string, string>()
@@ -145,4 +146,79 @@ assert.ok(renderRoute('/properties').includes('View details'))
 assert.ok(renderRoute('/maintenance').includes('>Maintenance</h1>'))
 saved.clear()
 console.log('PASS: reloaded dashboard/detail values, estimated revenue, filtered tables, and existing routes')
+const draft = { propertyId: 'p1', description: '  Repair the porch light.  ', priority: 'High' }
+const withRequest = createMaintenanceRequest(fullyLeased, draft)
+const request = withRequest.maintenanceRequests[0]
+assert.equal(request.description, 'Repair the porch light.')
+assert.equal(request.status, 'Open')
+assert.equal(request.priority, 'High')
+assert.equal(request.propertyId, 'p1')
+assert.ok(request.id)
+assert.equal(new Set(withRequest.maintenanceRequests.map((item) => item.id)).size, 7)
+const withSecondRequest = createMaintenanceRequest(withRequest, draft)
+assert.notEqual(withSecondRequest.maintenanceRequests[0].id, request.id)
+assert.deepEqual(withRequest.properties, fullyLeased.properties, 'Creation preserves leasing changes')
+assert.deepEqual(withRequest.maintenanceRequests.slice(1), fullyLeased.maintenanceRequests)
+assert.equal(fullyLeased.maintenanceRequests.length, 6, 'Creation does not mutate existing state')
+assert.deepEqual(maintenanceSummary(withRequest.maintenanceRequests), { total: 7, open: 3, inProgress: 2, resolved: 2 })
+assert.deepEqual(maintenanceSummary([]), { total: 0, open: 0, inProgress: 0, resolved: 0 })
+for (const description of ['', '   ', '\n\t']) {
+  assert.throws(() => createMaintenanceRequest(fullyLeased, { ...draft, description }), /description/)
+}
+assert.throws(() => createMaintenanceRequest(fullyLeased, { ...draft, propertyId: '' }), /valid house/)
+assert.throws(() => createMaintenanceRequest(fullyLeased, { ...draft, propertyId: 'missing' }), /valid house/)
+assert.throws(() => createMaintenanceRequest(fullyLeased, { ...draft, priority: 'Urgent' }), /priority/)
+console.log('PASS: maintenance creation, unique IDs, trimming, invalid input, summaries, and preserved properties')
+
+const inProgress = updateMaintenanceStatus(withRequest, request.id, 'In progress')
+const resolved = updateMaintenanceStatus(inProgress, request.id, 'Resolved')
+const reopened = updateMaintenanceStatus(resolved, request.id, 'Open')
+for (const [data, expected] of [[withRequest, 5], [inProgress, 5], [resolved, 4], [reopened, 5]] as const) {
+  assert.equal(calculateMetrics(data.properties, data.maintenanceRequests).openMaintenance, expected)
+  assert.equal(calculateMetrics(data.properties, data.maintenanceRequests).occupancy, 64)
+  assert.deepEqual(data.properties, fullyLeased.properties)
+  assert.deepEqual(data.maintenanceRequests.slice(1), fullyLeased.maintenanceRequests)
+  savePortfolio(data)
+  assert.deepEqual(loadPortfolio().data, data)
+}
+assert.equal(withRequest.maintenanceRequests[0].status, 'Open', 'Status updates do not mutate existing state')
+assert.deepEqual(maintenanceSummary(inProgress.maintenanceRequests), { total: 7, open: 2, inProgress: 3, resolved: 2 })
+assert.deepEqual(maintenanceSummary(resolved.maintenanceRequests), { total: 7, open: 2, inProgress: 2, resolved: 3 })
+assert.throws(() => updateMaintenanceStatus(withRequest, request.id, 'Closed'), /Choose Open/)
+assert.throws(() => updateMaintenanceStatus(withRequest, 'missing', 'Open'), /not be found/)
+assert.deepEqual(filterMaintenance(withRequest.maintenanceRequests, 'Open', 'High', 'p1'), [request])
+assert.equal(filterMaintenance(withRequest.maintenanceRequests, '', '', '').length, 7)
+assert.equal(filterMaintenance(withRequest.maintenanceRequests, 'Resolved', 'High', 'p1').length, 0)
+assert.equal(filterMaintenance(withRequest.maintenanceRequests, '', '', 'missing').length, 0)
+assert.equal(filterMaintenance(withRequest.maintenanceRequests, '', 'High', '').length, 2)
+assert.equal(filterMaintenance(withRequest.maintenanceRequests, '', '', 'p1').length, 2)
+assert.equal(withRequest.maintenanceRequests.length, 7)
+console.log('PASS: status workflow/reopening, combined filters, dashboard unresolved counts, and save/reload')
+
+const invalidMaintenance = structuredClone(reopened)
+invalidMaintenance.maintenanceRequests[0].description = ' '
+assert.throws(() => savePortfolio(invalidMaintenance), /invalid/)
+const beforeFailure = saved.get(STORAGE_KEY)
+Object.defineProperty(globalThis, 'localStorage', {
+  configurable: true, value: { ...storage, setItem: () => { throw new Error('Quota exceeded') } },
+})
+assert.throws(() => savePortfolio(withSecondRequest), /could not be saved/)
+assert.throws(() => savePortfolio(resolved), /could not be saved/)
+assert.equal(saved.get(STORAGE_KEY), beforeFailure)
+Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true })
+assert.deepEqual(loadPortfolio().data, reopened)
+assert.ok(renderRoute('/maintenance').includes('Repair the porch light.'))
+assert.ok(renderRoute('/maintenance').includes('Showing 7 of 7 requests'))
+assert.ok(renderRoute('/maintenance?status=Open&priority=High&property=p1').includes('Showing 1 of 7 requests'))
+assert.ok(renderRoute('/maintenance?status=Resolved&priority=High&property=p1').includes('No requests match your filters'))
+const dashboardAfterMaintenance = renderRoute('/')
+assert.match(dashboardAfterMaintenance, /Open maintenance[\s\S]*?tabular-nums">5<\/p>/)
+assert.ok(dashboardAfterMaintenance.includes('64.0%'))
+const leasingAfterMaintenance = updatePropertyLeasing(reopened, 'p1', 0)
+assert.deepEqual(leasingAfterMaintenance.maintenanceRequests, reopened.maintenanceRequests)
+savePortfolio(leasingAfterMaintenance)
+assert.equal(loadPortfolio().data.properties[0].leasingStatus, 'Available')
+assert.ok(renderRoute('/properties/p1').includes('Available'))
+saved.clear()
+console.log('PASS: maintenance save failures, storage validation, rendered filters/dashboard, and property regression')
 console.log('These are logic and server-rendering checks, not browser or visual tests.')
